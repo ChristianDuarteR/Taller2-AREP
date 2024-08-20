@@ -1,38 +1,56 @@
 package edu.escuelaing.arem.ASE.app;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
-/**
- * Unit test for simple SimpleWebServer.
- */
-public class AppTest 
-    extends TestCase
-{
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public AppTest( String testName )
-    {
-        super( testName );
+import java.io.*;
+import java.net.Socket;
+import java.net.SocketAddress;
+
+import static org.mockito.Mockito.*;
+
+public class AppTest {
+
+    private RESTService restService;
+    private Socket mockSocket;
+    private OutputStream mockOutputStream;
+    private BufferedReader mockBufferedReader;
+
+    @Before
+    public void setUp() throws IOException {
+        restService = new RestServiceImpl();
+        mockSocket = Mockito.mock(Socket.class);
+        mockOutputStream = Mockito.mock(OutputStream.class);
+        mockBufferedReader = Mockito.mock(BufferedReader.class);
+
+        when(mockSocket.getOutputStream()).thenReturn(mockOutputStream);
+        when(mockSocket.getRemoteSocketAddress()).thenReturn(mock(SocketAddress.class));
     }
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( AppTest.class );
+    @Test
+    public void testHandleGet() throws IOException {
+        when(mockBufferedReader.readLine())
+                .thenReturn("GET /api/resource HTTP/1.1")
+                .thenReturn("Host: localhost")
+                .thenReturn("")
+                .thenReturn(null);
+
+        restService.handleGet(new String[]{"GET", "/api/resource"}, mockBufferedReader, mockOutputStream, mockSocket);
+
+        verify(mockOutputStream, times(1)).write(any(byte[].class));
     }
 
-    /**
-     * Rigourous Test :-)
-     */
-    public void testApp()
-    {
-        assertTrue( true );
+    @Test
+    public void testHandlePost() throws IOException {
+        StringBuilder jsonString = new StringBuilder("{\"message\":\"Hello World\"}");
+        BufferedReader reader = new BufferedReader(new StringReader("POST /api HTTP/1.1\r\nContent-Length: 27\r\n\r\n" + jsonString));
+        OutputStream outputStream = Mockito.mock(OutputStream.class);
+
+        RestServiceImpl service = new RestServiceImpl();
+
+        service.handlePost(reader, outputStream);
+
+        Mockito.verify(outputStream, Mockito.times(1)).write(Mockito.any(byte[].class));
     }
 }
