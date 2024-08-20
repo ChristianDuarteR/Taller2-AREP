@@ -16,7 +16,7 @@ Para instalar y ejecutar el software, necesitas tener instalado Java Development
 
 Sigue estos pasos para configurar el entorno de desarrollo:
 1. Abrir una terminal git en su maquina, Puedes descargarlo desde [la pagina oficial de Git](https://git-scm.com)
-2. Clonar el repositorio con el comando -git clone https://github.com/ChristianDuarteR/Taller1.git se creara una copia de el proyecto sobre tu maquina virtual
+2. Clonar el repositorio con el comando -git clone https://github.com/ChristianDuarteR/Taller1-AREP.git se creara una copia de el proyecto sobre tu maquina virtual
 3. Abrir el proyecto sobre su tu idl favorito (visual studio, InteliJ, NetBeans, etc)
 4. Compilar el proyecto con Maven usando el comando -mvn package
 5. Ejecutar el proyecto sobre la clase que contiene el metodo MAIN: SimpleWebServer.java
