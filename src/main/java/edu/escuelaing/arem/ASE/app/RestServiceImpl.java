@@ -102,6 +102,7 @@ public class RestServiceImpl implements RESTService {
                 statusCode, statusMessage, jsonResponse.length(), jsonResponse
         );
         out.write(httpResponse.getBytes());
+
         out.flush();
     }
 
