@@ -22,8 +22,7 @@ public class SimpleWebServer {
 
     public static void main(String[] args) {
         staticfiles("webroot");
-        get("/hello", (req, resp) -> "Hello " + req.getValue("name"));
-        get("/pi", (req, res) -> String.valueOf(Math.PI));
+        startServices();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor escuchando en el puerto " + PORT);
@@ -54,6 +53,12 @@ public class SimpleWebServer {
         } catch (IOException e) {
             System.err.println("Error al crear el directorio: " + e.getMessage());
         }
+    }
+
+    public static void startServices(){
+        get("/hello", (req, resp) -> "Hello " + req.getValue("name"));
+        get("/pi", (req, res) -> String.valueOf(Math.PI));
+        // El resto por implementar
     }
 
     private static class ClientHandler implements Runnable {
