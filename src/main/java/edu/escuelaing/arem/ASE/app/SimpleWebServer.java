@@ -117,6 +117,27 @@ public class SimpleWebServer {
             return new Gson().toJson(systemInfo);
         });
 
+        get("/index", (req, res) -> {
+            res.setContentType("text/html");
+            return "<html>" +
+                        "<head><title>Taller dos Simulando Spark</title></head>" +
+                            "<body>" +
+                                "<h1>Creando un FrameWork</h1>" +
+                                "<p>Bienvenido a la API SimpleWebServer</p>" +
+                                "<p>Recuerde que antes de cualquier llamado GET debe preceder /API/ antes de su solicitud</p>" +
+                                "<h2>A continuacion se listan los servicios para que sean probados:</h2>" +
+                                "<ul>" +
+                                    "<li><a href=\"/api/greet?name=?&greeting=?\">/api/greet?name=?&greeting=?</a> - Devuelve un saludo personalizado.</li>" +
+                                    "<li><a href=\"/api/calculate?operation=?&num1=?&num2=?\">/api/calculate?operation=?&num1=?&num2=?</a> - Calculadora con operaciones como (add, subtract, multiply,divide )." +
+                                    "</li>" +
+                                "<li><a href=\"/api/system-info\">/api/system-info</a> - Devuelve informacion del sistema.</li>" +
+                                "<li><a href=\"/api/index\">/api/index</a> - Devuelve esta pagina.</li>" +
+                                "<li><a href=\"/api\">/api</a> - Prueba para confirmar que API is working </li>" +
+                                "</ul>" +
+                            "</body>" +
+                    "</html>";
+        });
+
     }
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;
@@ -191,6 +212,7 @@ public class SimpleWebServer {
                     "\r\n" +
                     "{\"error\": \"Not Found\"}";
             out.write(response.getBytes());
+            out.flush();
         }
     }
 }
