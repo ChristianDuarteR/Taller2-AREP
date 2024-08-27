@@ -22,7 +22,8 @@ public class SimpleWebServer {
 
     public static void main(String[] args) {
         staticfiles("webroot");
-        addServices();
+        get("/hello", (req, resp) -> "Hello " + req.getValue("name"));
+        get("/pi", (req, res) -> String.valueOf(Math.PI));
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servidor escuchando en el puerto " + PORT);
@@ -37,9 +38,8 @@ public class SimpleWebServer {
     }
 
 
-    public static void addServices() {
-        getServices.put("/hello", (req, res) -> "Hello " + req.getValue("name"));
-        getServices.put("/pi", (req, res) -> String.valueOf(Math.PI));
+    public static void get(String path, RESTService action) {
+        getServices.put(path, action);
     }
 
     public static void staticfiles(String directory) {
