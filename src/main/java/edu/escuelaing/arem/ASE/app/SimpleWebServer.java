@@ -1,5 +1,7 @@
 package edu.escuelaing.arem.ASE.app;
 
+import edu.escuelaing.arem.ASE.app.exceptions.ServiceNotFoundException;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,7 +20,7 @@ public class SimpleWebServer {
 
     private static final int PORT = 8080;
     private static String WEB_ROOT;
-    private static final Map<String, RESTService> getServices = new HashMap<>();
+    private static final Map<String, RESTService> services = new HashMap<>();
 
     public static void main(String[] args) {
         staticfiles("webroot");
@@ -38,7 +40,7 @@ public class SimpleWebServer {
 
 
     public static void get(String path, RESTService action) {
-        getServices.put(path, action);
+        services.put("/api" + path, action);
     }
 
     public static void staticfiles(String directory) {
@@ -56,6 +58,7 @@ public class SimpleWebServer {
     }
 
     public static void startServices(){
+        get("", (req, resp) ->"API WORKING");
         get("/hello", (req, resp) -> "Hello " + req.getValue("name"));
         get("/pi", (req, res) -> String.valueOf(Math.PI));
         // El resto por implementar
@@ -79,16 +82,20 @@ public class SimpleWebServer {
                 String[] tokens = requestLine.split(" ");
                 if (tokens.length < 3) return;
 
-                String method = tokens[0];
+                //String method = tokens[0];
                 String requestedResource = tokens[1];
                 String basePath = requestedResource.split("\\?")[0];
 
-                if ("GET".equals(method) && getServices.containsKey(basePath)) {
-                    Request req = new Request(requestedResource);
-                    Response res = new Response(out);
-                    String response = getServices.get(basePath).handleREST(req, res);
-                    sendResponse(out, response);
-                } else {
+                if(basePath.startsWith("/api")) {
+                    if (services.containsKey(basePath)) {
+                        Request req = new Request(requestedResource);
+                        Response res = new Response(out);
+                        String response = services.get(basePath).handleREST(req, res);
+                        sendResponse(out, response);
+                    } else {
+                        throw new ServiceNotFoundException("No service found for path: " + basePath);
+                    }
+                }else {
                     serveStaticFile(basePath, out);
                 }
             } catch (IOException e) {
