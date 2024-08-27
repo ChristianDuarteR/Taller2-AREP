@@ -1,5 +1,6 @@
 package edu.escuelaing.arem.ASE.app;
 
+import com.google.gson.Gson;
 import edu.escuelaing.arem.ASE.app.exceptions.ServiceNotFoundException;
 
 import java.io.*;
@@ -38,10 +39,10 @@ public class SimpleWebServer {
         }
     }
 
-
     public static void get(String path, RESTService action) {
         services.put("/api" + path, action);
     }
+
 
     public static void staticfiles(String directory) {
         WEB_ROOT = "target/classes/"+directory;
@@ -59,11 +60,64 @@ public class SimpleWebServer {
 
     public static void startServices(){
         get("", (req, resp) ->"API WORKING");
-        get("/hello", (req, resp) -> "Hello " + req.getValue("name"));
-        get("/pi", (req, res) -> String.valueOf(Math.PI));
-        // El resto por implementar
-    }
 
+        get("/greet", (req, res) -> {
+            String name = req.getValue("name");
+            String greeting = req.getValue("greeting");
+            if (name != null && greeting != null) {
+                return greeting + " " + name;
+            } else {
+                return "Hello, World!";
+            }
+        });
+
+        get("/calculate", (req, res) -> {
+
+            String operation = req.getValue("operation");
+            String num1 = req.getValue("num1");
+            String num2 = req.getValue("num2");
+
+            if (operation != null && num1 != null && num2 != null) {
+                try {
+                    double a = Double.parseDouble(num1);
+                    double b = Double.parseDouble(num2);
+                    switch (operation) {
+                        case "add":
+                            return String.valueOf(a + b);
+                        case "subtract":
+                            return String.valueOf(a - b);
+                        case "multiply":
+                            return String.valueOf(a * b);
+                        case "divide":
+                            return b != 0 ? String.valueOf(a / b) : "Cannot divide by zero";
+                        default:
+                            return "Invalid operation";
+                    }
+                } catch (NumberFormatException e) {
+                    return "Invalid number format";
+                }
+            }
+            return "Missing parameters";
+        });
+
+        get("/system-info", (req, res) -> {
+            Map<String, Object> systemInfo = new HashMap<>();
+            systemInfo.put("OS", System.getProperty("os.name"));
+            systemInfo.put("OS Version", System.getProperty("os.version"));
+            systemInfo.put("Architecture", System.getProperty("os.arch"));
+            systemInfo.put("Java Version", System.getProperty("java.version"));
+            systemInfo.put("JRE Vendor", System.getProperty("java.vendor"));
+            systemInfo.put("JRE Home", System.getProperty("java.home"));
+            systemInfo.put("Available Processors", Runtime.getRuntime().availableProcessors());
+            systemInfo.put("Free Memory (bytes)", Runtime.getRuntime().freeMemory());
+            systemInfo.put("Total Memory (bytes)", Runtime.getRuntime().totalMemory());
+            systemInfo.put("Max Memory (bytes)", Runtime.getRuntime().maxMemory());
+
+            res.setContentType("application/json");
+            return new Gson().toJson(systemInfo);
+        });
+
+    }
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;
 
@@ -90,8 +144,9 @@ public class SimpleWebServer {
                     if (services.containsKey(basePath)) {
                         Request req = new Request(requestedResource);
                         Response res = new Response(out);
+                        res.setCodeResponse("200 OK");
                         String response = services.get(basePath).handleREST(req, res);
-                        sendResponse(out, response);
+                        sendResponse(out, response, res);
                     } else {
                         throw new ServiceNotFoundException("No service found for path: " + basePath);
                     }
@@ -120,13 +175,14 @@ public class SimpleWebServer {
             }
         }
 
-        private void sendResponse(OutputStream out, String response) throws IOException {
-            String httpResponse = "HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
+        private void sendResponse(OutputStream out, String response, Response res) throws IOException {
+            String httpResponse = "HTTP/1.1 "+ res.getCodeResponse()+ "\r\n" +
+                    "Content-Type: " + res.getContentType() + "\r\n" +
                     "Content-Length: " + response.length() + "\r\n" +
                     "\r\n" +
                     response;
             out.write(httpResponse.getBytes());
+            out.flush();
         }
 
         private void send404(OutputStream out) throws IOException {
