@@ -16,23 +16,12 @@ import java.util.Map;
  */
 public class SimpleWebServer {
 
-    // Puerto en el que el servidor escuchará las conexiones entrantes.
     private static final int PORT = 8080;
+    private static String WEB_ROOT;
+    private static final Map<String, RESTService> getServices = new HashMap<>();
 
-    // Directorio raíz donde se encuentran los archivos estáticos.
-    private static final String WEB_ROOT = "src/main/webroot";
-
-    // Mapa que almacena los servicios REST disponibles.
-    private static final Map<String, RESTService> services = new HashMap<>();
-
-    /**
-     * Método principal que inicia el servidor web.
-     * Configura el servidor para escuchar en el puerto definido y
-     * acepta conexiones entrantes.
-     *
-     * @param args Argumentos de la línea de comandos.
-     */
     public static void main(String[] args) {
+        staticfiles("webroot");
         addServices();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -47,36 +36,33 @@ public class SimpleWebServer {
         }
     }
 
-    /**
-     * Configura los servicios REST disponibles en el servidor.
-     * En este caso, se agregan los servicios GET y POST.
-     */
+
     public static void addServices() {
-        RestServiceImpl services = new RestServiceImpl();
-        SimpleWebServer.services.put("GET" , services);
-        SimpleWebServer.services.put("POST" , services);
+        getServices.put("/hello", (req, res) -> "Hello " + req.getValue("name"));
+        getServices.put("/pi", (req, res) -> String.valueOf(Math.PI));
     }
 
-    /**
-     * Clase interna que maneja las solicitudes de los clientes en un hilo separado.
-     */
+    public static void staticfiles(String directory) {
+        WEB_ROOT = "target/classes/"+directory;
+
+        Path path = Paths.get(WEB_ROOT);
+        try {
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+                System.out.println("Directorio creado: " + WEB_ROOT);
+            }
+        } catch (IOException e) {
+            System.err.println("Error al crear el directorio: " + e.getMessage());
+        }
+    }
+
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;
 
-        /**
-         * Constructor que inicializa el manejador con el socket del cliente.
-         *
-         * @param clientSocket Socket del cliente.
-         */
         public ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
         }
 
-        /**
-         * Método que maneja la solicitud del cliente.
-         * Lee la línea de solicitud, determina el método HTTP y el recurso solicitado,
-         * y decide si debe manejar una solicitud REST o servir un archivo estático.
-         */
         @Override
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -90,52 +76,21 @@ public class SimpleWebServer {
 
                 String method = tokens[0];
                 String requestedResource = tokens[1];
+                String basePath = requestedResource.split("\\?")[0];
 
-                if (services.containsKey(method) && requestedResource.startsWith("/api")) {
-                    RESTService service = services.get(method);
-                    switch (method) {
-                        case "GET":
-                            service.handleGet(tokens, in, out, clientSocket);
-                            break;
-                        case "POST":
-                            service.handlePost(in, out);
-                            break;
-                        default:
-                            send404(out);
-                    }
+                if ("GET".equals(method) && getServices.containsKey(basePath)) {
+                    Request req = new Request(requestedResource);
+                    Response res = new Response(out);
+                    String response = getServices.get(basePath).handleREST(req, res);
+                    sendResponse(out, response);
                 } else {
-                    serveStaticFile(requestedResource, out);
+                    serveStaticFile(basePath, out);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        /**
-         * Imprime los encabezados de la solicitud HTTP.
-         *
-         * @param requestLine Línea de solicitud HTTP.
-         * @param in BufferedReader para leer los encabezados.
-         * @throws IOException Si ocurre un error de entrada/salida.
-         */
-        private void printRequestHeader(String requestLine, BufferedReader in) throws IOException {
-            System.out.println("Request Line: " + requestLine);
-            String inputLine = "";
-            while ((inputLine = in.readLine()) != null) {
-                System.out.println("Header: " + inputLine);
-                if (!in.ready()) {
-                    break;
-                }
-            }
-        }
-
-        /**
-         * Sirve un archivo estático al cliente.
-         *
-         * @param resource Recurso solicitado.
-         * @param out Salida de datos del socket del cliente.
-         * @throws IOException Si ocurre un error de entrada/salida.
-         */
         private void serveStaticFile(String resource, OutputStream out) throws IOException {
             Path filePath = Paths.get(WEB_ROOT, resource);
             if (Files.exists(filePath) && !Files.isDirectory(filePath)) {
@@ -153,12 +108,15 @@ public class SimpleWebServer {
             }
         }
 
-        /**
-         * Envía una respuesta 404 Not Found al cliente.
-         *
-         * @param out Salida de datos del socket del cliente.
-         * @throws IOException Si ocurre un error de entrada/salida.
-         */
+        private void sendResponse(OutputStream out, String response) throws IOException {
+            String httpResponse = "HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Content-Length: " + response.length() + "\r\n" +
+                    "\r\n" +
+                    response;
+            out.write(httpResponse.getBytes());
+        }
+
         private void send404(OutputStream out) throws IOException {
             String response = "HTTP/1.1 404 Not Found\r\n" +
                     "Content-Type: application/json\r\n" +

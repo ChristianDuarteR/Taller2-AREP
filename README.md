@@ -1,4 +1,4 @@
-# Taller numero 1:AREP- Christian Duarte - DISEÑO Y ESTRUCTURACIÓN DE APLICACIONES DISTRIBUIDAS EN INTERNET
+# Taller numero 2:AREP- Christian Duarte - DISEÑO Y ESTRUCTURACIÓN DE APLICACIONES DISTRIBUIDAS EN INTERNET
 
 Un servidor web simple en Java que maneja solicitudes REST para obtener, agregar y eliminar mensajes. Este proyecto está diseñado para demostrar la implementación de un servidor básico que utiliza JSON para almacenar y manejar datos.
 
