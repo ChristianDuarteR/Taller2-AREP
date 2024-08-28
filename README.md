@@ -21,6 +21,7 @@ Sigue estos pasos para configurar el entorno de desarrollo:
 4. Compilar el proyecto con Maven usando el comando: mvn package
 5. Ejecutar el proyecto utilizando la clase que contiene el método `main`: `SimpleWebServer.java`.
 6. Verás que el servidor está listo y corriendo en el puerto 8080.
+7. Se recomienda que el primer llamado sea a **`/api/index`** 
 
 ## Running the tests
 
@@ -30,12 +31,12 @@ Esto ejecutará todas las pruebas en el proyecto y generará un informe detallad
 
 ## And coding style tests
 
-1. testStartServices_apiWorking:
-2. testGreetService:
-3. testCalculateService_add:
-4. testCalculateService_divideByZero:
-5. testSystemInfoService:
-6. testIndexService:
+1. testStartServices_apiWorking: Test para comprobar que la API esta encendida
+2. testGreetService: Test al endpoint /greet para comprobar su funcionamiento
+3. testCalculateService_add: Test al endPoint /calculate para comprobar sus operaciones
+4. testCalculateService_divideByZero: Test al endPoint /calculate para comprobar sus errores
+5. testSystemInfoService: Test al endPoint /info-service para comprobar que traiga la informacion
+6. testIndexService: Test al endpoint /index para comprobar que traiga un HTML
 
 ## Built With
 
@@ -52,7 +53,7 @@ El servidor proporciona los siguientes endpoints REST:
 - **`/api/greet?name=?&greeting=?`**: Devuelve un saludo personalizado.
 - **`/api/calculate?operation=?&num1=?&num2=?`**: Calculadora con operaciones como (add, subtract, multiply,divide ).
 - **`/api/system-info`**: Devuelve informacion del sistema en formate JSON.
-- **`/api/index`**: Devuelve esta pagina.
+- **`/api/index`**: Devuelve una pagina HTML con infomacion de la API.
 - **`/api`**: Prueba para confirmar que API is working
 
 ## Static Files
