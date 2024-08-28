@@ -21,8 +21,12 @@ public class SimpleWebServer {
 
     private static final int PORT = 8080;
     private static String WEB_ROOT;
-    private static final Map<String, RESTService> services = new HashMap<>();
+    static final Map<String, RESTService> services = new HashMap<>();
 
+    /**
+     * Método principal que inicia el servidor web.
+     * @param args Argumentos de línea de comandos.
+     */
     public static void main(String[] args) {
         staticfiles("webroot");
         startServices();
@@ -39,13 +43,21 @@ public class SimpleWebServer {
         }
     }
 
+    /**
+     * Registra un servicio REST para una ruta específica.
+     * @param path Ruta del servicio REST.
+     * @param action Acción a ejecutar cuando se recibe una solicitud en la ruta especificada.
+     */
     public static void get(String path, RESTService action) {
         services.put("/api" + path, action);
     }
 
-
+    /**
+     * Establece el directorio raíz de archivos estáticos.
+     * @param directory Nombre del directorio que contiene los archivos estáticos.
+     */
     public static void staticfiles(String directory) {
-        WEB_ROOT = "target/classes/"+directory;
+        WEB_ROOT = "target/classes/" + directory;
 
         Path path = Paths.get(WEB_ROOT);
         try {
@@ -58,8 +70,11 @@ public class SimpleWebServer {
         }
     }
 
-    public static void startServices(){
-        get("", (req, resp) ->"API WORKING");
+    /**
+     * Inicializa los servicios REST predefinidos.
+     */
+    public static void startServices() {
+        get("", (req, resp) -> "API WORKING");
 
         get("/greet", (req, res) -> {
             String name = req.getValue("name");
@@ -72,7 +87,6 @@ public class SimpleWebServer {
         });
 
         get("/calculate", (req, res) -> {
-
             String operation = req.getValue("operation");
             String num1 = req.getValue("num1");
             String num2 = req.getValue("num2");
@@ -120,25 +134,28 @@ public class SimpleWebServer {
         get("/index", (req, res) -> {
             res.setContentType("text/html");
             return "<html>" +
-                        "<head><title>Taller dos Simulando Spark</title></head>" +
-                            "<body>" +
-                                "<h1>Creando un FrameWork</h1>" +
-                                "<p>Bienvenido a la API SimpleWebServer</p>" +
-                                "<p>Recuerde que antes de cualquier llamado GET debe preceder /API/ antes de su solicitud</p>" +
-                                "<h2>A continuacion se listan los servicios para que sean probados:</h2>" +
-                                "<ul>" +
-                                    "<li><a href=\"/api/greet?name=?&greeting=?\">/api/greet?name=?&greeting=?</a> - Devuelve un saludo personalizado.</li>" +
-                                    "<li><a href=\"/api/calculate?operation=?&num1=?&num2=?\">/api/calculate?operation=?&num1=?&num2=?</a> - Calculadora con operaciones como (add, subtract, multiply,divide )." +
-                                    "</li>" +
-                                "<li><a href=\"/api/system-info\">/api/system-info</a> - Devuelve informacion del sistema.</li>" +
-                                "<li><a href=\"/api/index\">/api/index</a> - Devuelve esta pagina.</li>" +
-                                "<li><a href=\"/api\">/api</a> - Prueba para confirmar que API is working </li>" +
-                                "</ul>" +
-                            "</body>" +
+                    "<head><title>Taller dos Simulando Spark</title></head>" +
+                    "<body>" +
+                    "<h1>Creando un FrameWork</h1>" +
+                    "<p>Bienvenido a la API SimpleWebServer</p>" +
+                    "<p>Recuerde que antes de cualquier llamado GET debe preceder /API/ antes de su solicitud</p>" +
+                    "<h2>A continuación se listan los servicios para que sean probados:</h2>" +
+                    "<ul>" +
+                    "<li><a href=\"/api/greet?name=?&greeting=?\">/api/greet?name=?&greeting=?</a> - Devuelve un saludo personalizado.</li>" +
+                    "<li><a href=\"/api/calculate?operation=?&num1=?&num2=?\">/api/calculate?operation=?&num1=?&num2=?</a> - Calculadora con operaciones como (add, subtract, multiply, divide).</li>" +
+                    "<li><a href=\"/api/system-info\">/api/system-info</a> - Devuelve información del sistema.</li>" +
+                    "<li><a href=\"/api/index\">/api/index</a> - Devuelve esta página.</li>" +
+                    "<li><a href=\"/api\">/api</a> - Prueba para confirmar que API is working</li>" +
+                    "</ul>" +
+                    "</body>" +
                     "</html>";
         });
 
     }
+
+    /**
+     * Clase que maneja las conexiones de clientes en un hilo separado.
+     */
     private static class ClientHandler implements Runnable {
         private Socket clientSocket;
 
@@ -151,34 +168,39 @@ public class SimpleWebServer {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                  OutputStream out = clientSocket.getOutputStream()) {
 
-                String requestLine = in.readLine();
+                String requestLine = in.readLine(); // Lee la primera línea de la solicitud.
                 if (requestLine == null) return;
 
                 String[] tokens = requestLine.split(" ");
                 if (tokens.length < 3) return;
 
-                //String method = tokens[0];
-                String requestedResource = tokens[1];
-                String basePath = requestedResource.split("\\?")[0];
+                String requestedResource = tokens[1]; // Obtiene el recurso solicitado.
+                String basePath = requestedResource.split("\\?")[0]; // Extrae el camino base.
 
-                if(basePath.startsWith("/api")) {
+                if (basePath.startsWith("/api")) {
                     if (services.containsKey(basePath)) {
                         Request req = new Request(requestedResource);
                         Response res = new Response(out);
                         res.setCodeResponse("200 OK");
                         String response = services.get(basePath).handleREST(req, res);
-                        sendResponse(out, response, res);
+                        sendResponse(out, response, res); // Envía la respuesta del servicio REST.
                     } else {
                         throw new ServiceNotFoundException("No service found for path: " + basePath);
                     }
-                }else {
-                    serveStaticFile(basePath, out);
+                } else {
+                    serveStaticFile(basePath, out); // Sirve archivos estáticos.
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
+        /**
+         * Sirve un archivo estático desde el directorio raíz.
+         * @param resource Ruta del recurso solicitado.
+         * @param out Stream de salida para enviar la respuesta.
+         * @throws IOException Si ocurre un error al leer o enviar el archivo.
+         */
         private void serveStaticFile(String resource, OutputStream out) throws IOException {
             Path filePath = Paths.get(WEB_ROOT, resource);
             if (Files.exists(filePath) && !Files.isDirectory(filePath)) {
@@ -190,22 +212,34 @@ public class SimpleWebServer {
                         "Content-Length: " + fileContent.length + "\r\n" +
                         "\r\n";
                 out.write(responseHeader.getBytes());
-                out.write(fileContent);
+                out.write(fileContent); // Envía el contenido del archivo.
             } else {
-                send404(out);
+                send404(out); // Envía una respuesta 404 si el archivo no se encuentra.
             }
         }
 
+        /**
+         * Envía una respuesta HTTP con el contenido proporcionado.
+         * @param out Stream de salida para enviar la respuesta.
+         * @param response Contenido de la respuesta.
+         * @param res Objeto Response que contiene información adicional sobre la respuesta.
+         * @throws IOException Si ocurre un error al enviar la respuesta.
+         */
         private void sendResponse(OutputStream out, String response, Response res) throws IOException {
-            String httpResponse = "HTTP/1.1 "+ res.getCodeResponse()+ "\r\n" +
+            String httpResponse = "HTTP/1.1 " + res.getCodeResponse() + "\r\n" +
                     "Content-Type: " + res.getContentType() + "\r\n" +
                     "Content-Length: " + response.length() + "\r\n" +
                     "\r\n" +
                     response;
             out.write(httpResponse.getBytes());
-            out.flush();
+            out.flush(); // Envía y vacía el stream de salida.
         }
 
+        /**
+         * Envía una respuesta 404 Not Found.
+         * @param out Stream de salida para enviar la respuesta.
+         * @throws IOException Si ocurre un error al enviar la respuesta.
+         */
         private void send404(OutputStream out) throws IOException {
             String response = "HTTP/1.1 404 Not Found\r\n" +
                     "Content-Type: application/json\r\n" +

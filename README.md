@@ -30,8 +30,12 @@ Se ejecutaran todas las pruebas que se encuentren sobre el proyecto y detallara 
 
 ## And coding style tests
 
-1. TestHandleGet: Esta prueba simula una peticion GET al servidor y verifica que el estado sea el correcto de un respecto GET
-2. TestHandlePost: Esta prueba simula una peticion POST al servidor enviando un mensaje sencillo, y verifica que se haya creado con su respectivo stateCode 201
+1. testStartServices_apiWorking:
+2. testGreetService:
+3. testCalculateService_add:
+4. testCalculateService_divideByZero:
+5. testSystemInfoService:
+6. testIndexService:
 
 ## Built With
 
